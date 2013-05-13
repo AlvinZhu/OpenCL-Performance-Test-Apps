@@ -63,7 +63,9 @@ int main() {
     int i, j;
 
     dtype2* a = NULL;
+    dtype2* ra = NULL;
     dtype2* b = NULL;
+    dtype2* rb = NULL;
     dtype* result = NULL;;
 
     // Alloc aligned a, b
@@ -124,13 +126,13 @@ int main() {
     }
 
     // Map MemObject	
-    a = clEnqueueMapBuffer(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[0], CL_TRUE, CL_MAP_READ, 0, ARRAY_SIZE_A * sizeof(dtype2), 0, NULL, &a_map_event, &ret_num);
+    ra = clEnqueueMapBuffer(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[0], CL_TRUE, CL_MAP_READ, 0, ARRAY_SIZE_A * sizeof(dtype2), 0, NULL, &a_map_event, &ret_num);
     checkResult(platforms, ret_num, "clEnqueueMapBuffer(mem_objects[0])");
     while(clWaitForEvents(1, &a_map_event) != CL_SUCCESS){
 
     }
 
-    b = clEnqueueMapBuffer(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[1], CL_TRUE, CL_MAP_READ, 0, ARRAY_SIZE_B * sizeof(dtype2), 0, NULL, &b_map_event, &ret_num);
+    rb = clEnqueueMapBuffer(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[1], CL_TRUE, CL_MAP_READ, 0, ARRAY_SIZE_B * sizeof(dtype2), 0, NULL, &b_map_event, &ret_num);
     checkResult(platforms, ret_num, "clEnqueueMapBuffer(mem_objects[1])");
     while(clWaitForEvents(1, &b_map_event) != CL_SUCCESS){
 
@@ -146,7 +148,7 @@ int main() {
     start = timeNanos();
     for(i = 0; i < ARRAY_SIZE_B; i++){
         for(j = 0; j < ARRAY_SIZE_A; j++){
-            result[(i << 11) + j] = distance(a[j], b[i]);
+            result[(i << 11) + j] = distance(ra[j], rb[i]);
         }
     }
     end = timeNanos();
@@ -164,13 +166,13 @@ int main() {
     printf("GPU Time:%3llu.%09llus\n", (unsigned long long)use / 1000000000, (unsigned long long)use % 1000000000);
 
     // Unmap MemObject
-    ret_num = clEnqueueUnmapMemObject(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[0], a, 0, NULL, &a_unmap_event);
+    ret_num = clEnqueueUnmapMemObject(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[0], ra, 0, NULL, &a_unmap_event);
     checkResult(platforms, ret_num, "clEnqueueUnmapMemObject(mem_objects)");
     while(clWaitForEvents(1, &a_unmap_event) != CL_SUCCESS){
 
     }
 
-    ret_num = clEnqueueUnmapMemObject(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[1], b, 0, NULL, &b_unmap_event);
+    ret_num = clEnqueueUnmapMemObject(platforms[ddex.x].devices[ddex.y].command_queue, platforms[ddex.x].mem_objects[1], rb, 0, NULL, &b_unmap_event);
     checkResult(platforms, ret_num, "clEnqueueUnmapMemObject(mem_objects)");
     while(clWaitForEvents(1, &b_unmap_event) != CL_SUCCESS){
 
@@ -184,6 +186,8 @@ int main() {
 
     //
     cleanUp(platforms);
+    free((void*)a);
+    free((void*)b);
 
     return 0;
 }
